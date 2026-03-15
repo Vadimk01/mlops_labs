@@ -17,22 +17,28 @@ from sklearn.metrics import (
     roc_auc_score,
     confusion_matrix
 )
-from sklearn.model_selection import train_test_split
 
 warnings.filterwarnings("ignore")
 
 
-def load_data(file_path: str) -> pd.DataFrame:
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"Файл не знайдено: {file_path}")
-    return pd.read_csv(file_path)
+def load_prepared_data(data_dir: str):
+    train_path = os.path.join(data_dir, "train.csv")
+    test_path = os.path.join(data_dir, "test.csv")
+
+    if not os.path.exists(train_path):
+        raise FileNotFoundError(f"Файл не знайдено: {train_path}")
+    if not os.path.exists(test_path):
+        raise FileNotFoundError(f"Файл не знайдено: {test_path}")
+
+    train_df = pd.read_csv(train_path)
+    test_df = pd.read_csv(test_path)
+
+    return train_df, test_df
 
 
-def preprocess_data(df: pd.DataFrame, target_column: str = "Class"):
+def split_features_target(df: pd.DataFrame, target_column: str = "Class"):
     if target_column not in df.columns:
         raise ValueError(f"У датасеті немає цільової змінної '{target_column}'")
-
-    df = df.dropna()
 
     X = df.drop(columns=[target_column])
     y = df[target_column]
@@ -80,36 +86,33 @@ def save_feature_importance(model, feature_names, output_path: str, top_n: int =
 def parse_args():
     parser = argparse.ArgumentParser(description="Train RandomForest with MLflow")
 
-    parser.add_argument("--data_path", type=str, default="data/raw/creditcard.csv")
+    parser.add_argument("data_dir", type=str, help="Папка з prepared train/test файлами")
+    parser.add_argument("models_dir", type=str, help="Папка для збереження моделі та артефактів")
+
     parser.add_argument("--experiment_name", type=str, default="CreditCardFraudDetection")
     parser.add_argument("--run_name", type=str, default=None)
 
     parser.add_argument("--n_estimators", type=int, default=100)
     parser.add_argument("--max_depth", type=int, default=10)
-    parser.add_argument("--test_size", type=float, default=0.2)
     parser.add_argument("--random_state", type=int, default=42)
     parser.add_argument("--class_weight", type=str, default="balanced")
 
     parser.add_argument("--author", type=str, default="Vadym")
     parser.add_argument("--dataset_version", type=str, default="v1")
     parser.add_argument("--model_type", type=str, default="RandomForest")
+    parser.add_argument("--target_column", type=str, default="Class")
 
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
+    os.makedirs(args.models_dir, exist_ok=True)
 
-    df = load_data(args.data_path)
-    X, y = preprocess_data(df, target_column="Class")
+    train_df, test_df = load_prepared_data(args.data_dir)
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y,
-        test_size=args.test_size,
-        random_state=args.random_state,
-        stratify=y
-    )
+    X_train, y_train = split_features_target(train_df, target_column=args.target_column)
+    X_test, y_test = split_features_target(test_df, target_column=args.target_column)
 
     mlflow.set_experiment(args.experiment_name)
 
@@ -120,7 +123,6 @@ def main():
 
         mlflow.log_param("n_estimators", args.n_estimators)
         mlflow.log_param("max_depth", args.max_depth)
-        mlflow.log_param("test_size", args.test_size)
         mlflow.log_param("random_state", args.random_state)
         mlflow.log_param("class_weight", args.class_weight)
 
@@ -149,16 +151,17 @@ def main():
         for metric_name, metric_value in test_metrics.items():
             mlflow.log_metric(f"test_{metric_name}", metric_value)
 
-        confusion_matrix_path = "confusion_matrix.png"
-        feature_importance_path = "feature_importance.png"
+        confusion_matrix_path = os.path.join(args.models_dir, "confusion_matrix.png")
+        feature_importance_path = os.path.join(args.models_dir, "feature_importance.png")
+        model_path = os.path.join(args.models_dir, "random_forest_model")
 
         save_confusion_matrix(y_test, y_test_pred, confusion_matrix_path)
-        save_feature_importance(model, X.columns, feature_importance_path, top_n=15)
+        save_feature_importance(model, X_train.columns, feature_importance_path, top_n=15)
 
         mlflow.log_artifact(confusion_matrix_path)
         mlflow.log_artifact(feature_importance_path)
-
         mlflow.sklearn.log_model(model, "random_forest_model")
+        mlflow.sklearn.save_model(model, model_path)
 
         print("Навчання завершено успішно.")
         print(f"Train accuracy: {train_metrics['accuracy']:.4f}")
@@ -167,6 +170,7 @@ def main():
         print(f"Test f1_score:  {test_metrics['f1_score']:.4f}")
         print(f"Test recall:    {test_metrics['recall']:.4f}")
         print(f"Test roc_auc:   {test_metrics['roc_auc']:.4f}")
+        print(f"Модель та артефакти збережено у: {args.models_dir}")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,37 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: python src/prepare.py data/raw/creditcard.csv data/prepared
+    deps:
+    - path: data/raw/creditcard.csv
+      hash: md5
+      md5: e90efcb83d69faf99fcab8b0255024de
+      size: 150828752
+    - path: src/prepare.py
+      hash: md5
+      md5: b993dd84a5e1ff42dcab05984079d8cc
+      size: 2421
+    outs:
+    - path: data/prepared
+      hash: md5
+      md5: 3c66b577dae020f1ffa983fc535d07b5.dir
+      size: 151102527
+      nfiles: 2
+  train:
+    cmd: python src/train.py data/prepared data/models
+    deps:
+    - path: data/prepared
+      hash: md5
+      md5: 3c66b577dae020f1ffa983fc535d07b5.dir
+      size: 151102527
+      nfiles: 2
+    - path: src/train.py
+      hash: md5
+      md5: 9969e4a3a7d4220bc5c3dad25235aba0
+      size: 6612
+    outs:
+    - path: data/models
+      hash: md5
+      md5: 4b77fc69474ce1ff889d173761abca9c.dir
+      size: 1792753
+      nfiles: 7
