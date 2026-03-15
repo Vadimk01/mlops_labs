@@ -1,0 +1,4 @@
+[core]
+    remote = mylocal
+['remote "mylocal"']
+    url = C:\Users\Vadym\PycharmProjects\dvc_storage
