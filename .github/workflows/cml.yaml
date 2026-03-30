@@ -1,0 +1,89 @@
+name: Model CI (Train, Test, Report)
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    env:
+      CI: "true"
+      F1_THRESHOLD: "0.70"
+      DATA_PATH: "data/raw/creditcard.csv"
+      MODEL_PATH: "models/model.pkl"
+      METRICS_PATH: "models/metrics.json"
+      CM_PATH: "models/confusion_matrix.png"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install cml
+          pip install dvc
+          pip install flake8 black pytest
+
+      - name: Lint (flake8)
+        run: |
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Format check (black)
+        run: |
+          black . --check
+
+      - name: Pull data with DVC
+        run: |
+          dvc pull
+
+      - name: Run pre-train tests
+        run: |
+          pytest tests/test_model.py::test_data_schema_basic tests/test_model.py::test_no_critical_missing_values -q
+
+      - name: Prepare data
+        run: |
+          python src/prepare.py data/raw/creditcard.csv data/processed/processed_data.pickle
+
+      - name: Train model
+        run: |
+          python src/train.py data/processed/processed_data.pickle models --max_rows 5000
+
+      - name: Run post-train tests (Quality Gate)
+        run: |
+          pytest tests/test_model.py::test_artifacts_exist tests/test_model.py::test_metrics_file_structure tests/test_model.py::test_quality_gate_f1 -q
+
+      - name: Create CML report (PR only)
+        if: github.event_name == 'pull_request'
+        env:
+          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "## Model Metrics" > report.md
+          cat models/metrics.json >> report.md
+          echo "" >> report.md
+          echo "## Visualization" >> report.md
+          cml publish models/confusion_matrix.png --md >> report.md
+          echo "" >> report.md
+          echo "## Quality Gate" >> report.md
+          echo "F1 threshold: $F1_THRESHOLD" >> report.md
+          cml comment create report.md
+
+      - name: Upload model artifact (main only)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: model
+          path: models/model.pkl

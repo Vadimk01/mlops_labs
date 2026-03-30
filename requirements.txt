@@ -9,3 +9,6 @@ hydra-core
 optuna
 joblib
 omegaconf
+pytest
+flake8
+black

@@ -1,6 +1,9 @@
 import os
+import json
+import pickle
 import argparse
 import warnings
+import joblib
 
 import mlflow
 import mlflow.sklearn
@@ -17,23 +20,19 @@ from sklearn.metrics import (
     roc_auc_score,
     confusion_matrix
 )
+from sklearn.model_selection import train_test_split
 
 warnings.filterwarnings("ignore")
 
 
-def load_prepared_data(data_dir: str):
-    train_path = os.path.join(data_dir, "train.csv")
-    test_path = os.path.join(data_dir, "test.csv")
+def load_processed_data(file_path: str) -> pd.DataFrame:
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Файл не знайдено: {file_path}")
 
-    if not os.path.exists(train_path):
-        raise FileNotFoundError(f"Файл не знайдено: {train_path}")
-    if not os.path.exists(test_path):
-        raise FileNotFoundError(f"Файл не знайдено: {test_path}")
+    with open(file_path, "rb") as f:
+        df = pickle.load(f)
 
-    train_df = pd.read_csv(train_path)
-    test_df = pd.read_csv(test_path)
-
-    return train_df, test_df
+    return df
 
 
 def split_features_target(df: pd.DataFrame, target_column: str = "Class"):
@@ -46,13 +45,51 @@ def split_features_target(df: pd.DataFrame, target_column: str = "Class"):
     return X, y
 
 
+def sample_data(
+    df: pd.DataFrame,
+    max_rows: int,
+    target_column: str,
+    random_state: int
+) -> pd.DataFrame:
+    if max_rows is None or len(df) <= max_rows:
+        return df
+
+    if target_column not in df.columns:
+        raise ValueError(f"У датасеті немає цільової змінної '{target_column}'")
+
+    class_counts = df[target_column].value_counts()
+
+    if len(class_counts) < 2:
+        return df.sample(n=max_rows, random_state=random_state).reset_index(drop=True)
+
+    sampled_parts = []
+    total_len = len(df)
+
+    for class_value, class_count in class_counts.items():
+        class_df = df[df[target_column] == class_value]
+        n_class = max(1, round(max_rows * class_count / total_len))
+        n_class = min(n_class, len(class_df))
+        sampled_parts.append(class_df.sample(n=n_class, random_state=random_state))
+
+    sampled_df = (
+        pd.concat(sampled_parts)
+        .sample(frac=1, random_state=random_state)
+        .reset_index(drop=True)
+    )
+
+    if len(sampled_df) > max_rows:
+        sampled_df = sampled_df.sample(n=max_rows, random_state=random_state).reset_index(drop=True)
+
+    return sampled_df
+
+
 def calculate_metrics(y_true, y_pred, y_proba):
     return {
-        "accuracy": accuracy_score(y_true, y_pred),
-        "f1_score": f1_score(y_true, y_pred, zero_division=0),
-        "precision": precision_score(y_true, y_pred, zero_division=0),
-        "recall": recall_score(y_true, y_pred, zero_division=0),
-        "roc_auc": roc_auc_score(y_true, y_proba)
+        "accuracy": float(accuracy_score(y_true, y_pred)),
+        "f1": float(f1_score(y_true, y_pred, zero_division=0)),
+        "precision": float(precision_score(y_true, y_pred, zero_division=0)),
+        "recall": float(recall_score(y_true, y_pred, zero_division=0)),
+        "roc_auc": float(roc_auc_score(y_true, y_proba))
     }
 
 
@@ -83,19 +120,34 @@ def save_feature_importance(model, feature_names, output_path: str, top_n: int =
     plt.close()
 
 
+def save_metrics(metrics: dict, output_path: str):
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(metrics, f, ensure_ascii=False, indent=2)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Train RandomForest with MLflow")
 
-    parser.add_argument("data_dir", type=str, help="Папка з prepared train/test файлами")
-    parser.add_argument("models_dir", type=str, help="Папка для збереження моделі та артефактів")
+    parser.add_argument(
+        "data_path",
+        type=str,
+        help="Шлях до processed_data.pickle"
+    )
+    parser.add_argument(
+        "models_dir",
+        type=str,
+        help="Папка для збереження моделі та артефактів"
+    )
 
     parser.add_argument("--experiment_name", type=str, default="CreditCardFraudDetection")
     parser.add_argument("--run_name", type=str, default=None)
 
     parser.add_argument("--n_estimators", type=int, default=100)
     parser.add_argument("--max_depth", type=int, default=10)
+    parser.add_argument("--test_size", type=float, default=0.2)
     parser.add_argument("--random_state", type=int, default=42)
     parser.add_argument("--class_weight", type=str, default="balanced")
+    parser.add_argument("--max_rows", type=int, default=None)
 
     parser.add_argument("--author", type=str, default="Vadym")
     parser.add_argument("--dataset_version", type=str, default="v1")
@@ -109,10 +161,24 @@ def main():
     args = parse_args()
     os.makedirs(args.models_dir, exist_ok=True)
 
-    train_df, test_df = load_prepared_data(args.data_dir)
+    df = load_processed_data(args.data_path)
 
-    X_train, y_train = split_features_target(train_df, target_column=args.target_column)
-    X_test, y_test = split_features_target(test_df, target_column=args.target_column)
+    df = sample_data(
+        df=df,
+        max_rows=args.max_rows,
+        target_column=args.target_column,
+        random_state=args.random_state
+    )
+
+    X, y = split_features_target(df, target_column=args.target_column)
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X,
+        y,
+        test_size=args.test_size,
+        random_state=args.random_state,
+        stratify=y
+    )
 
     mlflow.set_experiment(args.experiment_name)
 
@@ -123,8 +189,10 @@ def main():
 
         mlflow.log_param("n_estimators", args.n_estimators)
         mlflow.log_param("max_depth", args.max_depth)
+        mlflow.log_param("test_size", args.test_size)
         mlflow.log_param("random_state", args.random_state)
         mlflow.log_param("class_weight", args.class_weight)
+        mlflow.log_param("max_rows", args.max_rows if args.max_rows is not None else "all")
 
         model = RandomForestClassifier(
             n_estimators=args.n_estimators,
@@ -153,21 +221,25 @@ def main():
 
         confusion_matrix_path = os.path.join(args.models_dir, "confusion_matrix.png")
         feature_importance_path = os.path.join(args.models_dir, "feature_importance.png")
-        model_path = os.path.join(args.models_dir, "random_forest_model")
+        metrics_path = os.path.join(args.models_dir, "metrics.json")
+        model_path = os.path.join(args.models_dir, "model.pkl")
 
         save_confusion_matrix(y_test, y_test_pred, confusion_matrix_path)
         save_feature_importance(model, X_train.columns, feature_importance_path, top_n=15)
+        save_metrics(test_metrics, metrics_path)
+        joblib.dump(model, model_path)
 
         mlflow.log_artifact(confusion_matrix_path)
         mlflow.log_artifact(feature_importance_path)
+        mlflow.log_artifact(metrics_path)
+        mlflow.log_artifact(model_path)
         mlflow.sklearn.log_model(model, "random_forest_model")
-        mlflow.sklearn.save_model(model, model_path)
 
         print("Навчання завершено успішно.")
         print(f"Train accuracy: {train_metrics['accuracy']:.4f}")
-        print(f"Train f1_score: {train_metrics['f1_score']:.4f}")
+        print(f"Train f1:       {train_metrics['f1']:.4f}")
         print(f"Test accuracy:  {test_metrics['accuracy']:.4f}")
-        print(f"Test f1_score:  {test_metrics['f1_score']:.4f}")
+        print(f"Test f1:        {test_metrics['f1']:.4f}")
         print(f"Test recall:    {test_metrics['recall']:.4f}")
         print(f"Test roc_auc:   {test_metrics['roc_auc']:.4f}")
         print(f"Модель та артефакти збережено у: {args.models_dir}")
