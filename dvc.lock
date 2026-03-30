@@ -1,7 +1,8 @@
 schema: '2.0'
 stages:
   prepare:
-    cmd: python src/prepare.py data/raw/creditcard.csv data/prepared
+    cmd: python src/prepare.py data/raw/creditcard.csv 
+      data/processed/processed_data.pickle
     deps:
     - path: data/raw/creditcard.csv
       hash: md5
@@ -9,29 +10,27 @@ stages:
       size: 150828752
     - path: src/prepare.py
       hash: md5
-      md5: b993dd84a5e1ff42dcab05984079d8cc
-      size: 2421
+      md5: e695ac31639c2892c3484ccc44017c2f
+      size: 1639
     outs:
-    - path: data/prepared
+    - path: data/processed/processed_data.pickle
       hash: md5
-      md5: 3c66b577dae020f1ffa983fc535d07b5.dir
-      size: 151102527
-      nfiles: 2
+      md5: 661635581188fc1429d1b1222f7fce40
+      size: 70633089
   train:
-    cmd: python src/train.py data/prepared data/models
+    cmd: python src/train.py data/processed/processed_data.pickle models
     deps:
-    - path: data/prepared
+    - path: data/processed/processed_data.pickle
       hash: md5
-      md5: 3c66b577dae020f1ffa983fc535d07b5.dir
-      size: 151102527
-      nfiles: 2
+      md5: 661635581188fc1429d1b1222f7fce40
+      size: 70633089
     - path: src/train.py
       hash: md5
-      md5: 9969e4a3a7d4220bc5c3dad25235aba0
-      size: 6612
+      md5: f08d7b8e4e884102830fe406bead1547
+      size: 8636
     outs:
-    - path: data/models
+    - path: models
       hash: md5
-      md5: 4b77fc69474ce1ff889d173761abca9c.dir
-      size: 1792753
-      nfiles: 7
+      md5: b398f3573056429082dc64aea2db6a22.dir
+      size: 1801416
+      nfiles: 4
