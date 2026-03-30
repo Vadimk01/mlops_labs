@@ -49,6 +49,8 @@ jobs:
           black . --check
 
       - name: Pull data with DVC
+        env:
+          GDRIVE_CREDENTIALS_DATA: ${{ secrets.GDRIVE_CREDENTIALS_DATA }}
         run: |
           dvc pull
 

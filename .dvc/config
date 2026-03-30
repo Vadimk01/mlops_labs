@@ -1,4 +1,5 @@
 [core]
-    remote = mylocal
-['remote "mylocal"']
-    url = C:\Users\Vadym\PycharmProjects\dvc_storage
+    remote = myremote
+['remote "myremote"']
+    url = gdrive://1noD2p0MWZgshdF_1FOwUPO6YDOX9jKMe
+    gdrive_use_service_account = true
