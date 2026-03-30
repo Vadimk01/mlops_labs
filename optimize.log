@@ -1,0 +1,39 @@
+[2026-03-30 14:57:19,701][root][WARNING] - Malformed experiment '1'. Detailed error Yaml file '.\mlruns\1\meta.yaml' does not exist.
+Traceback (most recent call last):
+  File "C:\Users\Vadym\PycharmProjects\mlops_lab_1\venv\Lib\site-packages\mlflow\store\tracking\file_store.py", line 383, in search_experiments
+    exp = self._get_experiment(exp_id, view_type)
+  File "C:\Users\Vadym\PycharmProjects\mlops_lab_1\venv\Lib\site-packages\mlflow\store\tracking\file_store.py", line 481, in _get_experiment
+    meta = FileStore._read_yaml(experiment_dir, FileStore.META_DATA_FILE_NAME)
+  File "C:\Users\Vadym\PycharmProjects\mlops_lab_1\venv\Lib\site-packages\mlflow\store\tracking\file_store.py", line 1670, in _read_yaml
+    return _read_helper(root, file_name, attempts_remaining=retries)
+  File "C:\Users\Vadym\PycharmProjects\mlops_lab_1\venv\Lib\site-packages\mlflow\store\tracking\file_store.py", line 1663, in _read_helper
+    result = read_yaml(root, file_name)
+  File "C:\Users\Vadym\PycharmProjects\mlops_lab_1\venv\Lib\site-packages\mlflow\utils\yaml_utils.py", line 104, in read_yaml
+    raise MissingConfigException(f"Yaml file '{file_path}' does not exist.")
+mlflow.exceptions.MissingConfigException: Yaml file '.\mlruns\1\meta.yaml' does not exist.
+[2026-03-30 14:57:19,708][root][WARNING] - Malformed experiment '1'. Detailed error Yaml file '.\mlruns\1\meta.yaml' does not exist.
+Traceback (most recent call last):
+  File "C:\Users\Vadym\PycharmProjects\mlops_lab_1\venv\Lib\site-packages\mlflow\store\tracking\file_store.py", line 383, in search_experiments
+    exp = self._get_experiment(exp_id, view_type)
+  File "C:\Users\Vadym\PycharmProjects\mlops_lab_1\venv\Lib\site-packages\mlflow\store\tracking\file_store.py", line 481, in _get_experiment
+    meta = FileStore._read_yaml(experiment_dir, FileStore.META_DATA_FILE_NAME)
+  File "C:\Users\Vadym\PycharmProjects\mlops_lab_1\venv\Lib\site-packages\mlflow\store\tracking\file_store.py", line 1670, in _read_yaml
+    return _read_helper(root, file_name, attempts_remaining=retries)
+  File "C:\Users\Vadym\PycharmProjects\mlops_lab_1\venv\Lib\site-packages\mlflow\store\tracking\file_store.py", line 1663, in _read_helper
+    result = read_yaml(root, file_name)
+  File "C:\Users\Vadym\PycharmProjects\mlops_lab_1\venv\Lib\site-packages\mlflow\utils\yaml_utils.py", line 104, in read_yaml
+    raise MissingConfigException(f"Yaml file '{file_path}' does not exist.")
+mlflow.exceptions.MissingConfigException: Yaml file '.\mlruns\1\meta.yaml' does not exist.
+[2026-03-30 15:00:21,956][root][WARNING] - Malformed experiment '1'. Detailed error Yaml file '.\mlruns\1\meta.yaml' does not exist.
+Traceback (most recent call last):
+  File "C:\Users\Vadym\PycharmProjects\mlops_lab_1\venv\Lib\site-packages\mlflow\store\tracking\file_store.py", line 383, in search_experiments
+    exp = self._get_experiment(exp_id, view_type)
+  File "C:\Users\Vadym\PycharmProjects\mlops_lab_1\venv\Lib\site-packages\mlflow\store\tracking\file_store.py", line 481, in _get_experiment
+    meta = FileStore._read_yaml(experiment_dir, FileStore.META_DATA_FILE_NAME)
+  File "C:\Users\Vadym\PycharmProjects\mlops_lab_1\venv\Lib\site-packages\mlflow\store\tracking\file_store.py", line 1670, in _read_yaml
+    return _read_helper(root, file_name, attempts_remaining=retries)
+  File "C:\Users\Vadym\PycharmProjects\mlops_lab_1\venv\Lib\site-packages\mlflow\store\tracking\file_store.py", line 1663, in _read_helper
+    result = read_yaml(root, file_name)
+  File "C:\Users\Vadym\PycharmProjects\mlops_lab_1\venv\Lib\site-packages\mlflow\utils\yaml_utils.py", line 104, in read_yaml
+    raise MissingConfigException(f"Yaml file '{file_path}' does not exist.")
+mlflow.exceptions.MissingConfigException: Yaml file '.\mlruns\1\meta.yaml' does not exist.

@@ -1,10 +1,9 @@
 import os
-import sys
 import argparse
 import warnings
+import pickle
 
 import pandas as pd
-from sklearn.model_selection import train_test_split
 
 warnings.filterwarnings("ignore")
 
@@ -23,40 +22,21 @@ def preprocess_data(df: pd.DataFrame, target_column: str = "Class") -> pd.DataFr
     return df
 
 
-def split_and_save_data(
-    df: pd.DataFrame,
-    output_dir: str,
-    test_size: float = 0.2,
-    random_state: int = 42,
-    target_column: str = "Class"
-):
-    os.makedirs(output_dir, exist_ok=True)
+def save_processed_data(df: pd.DataFrame, output_file: str):
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
 
-    train_df, test_df = train_test_split(
-        df,
-        test_size=test_size,
-        random_state=random_state,
-        stratify=df[target_column]
-    )
-
-    train_path = os.path.join(output_dir, "train.csv")
-    test_path = os.path.join(output_dir, "test.csv")
-
-    train_df.to_csv(train_path, index=False)
-    test_df.to_csv(test_path, index=False)
+    with open(output_file, "wb") as f:
+        pickle.dump(df, f)
 
     print("Підготовка даних завершена успішно.")
-    print(f"Train shape: {train_df.shape}")
-    print(f"Test shape:  {test_df.shape}")
-    print(f"Файли збережено у: {output_dir}")
+    print(f"Shape after preprocessing: {df.shape}")
+    print(f"Файл збережено: {output_file}")
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Prepare dataset for training")
     parser.add_argument("input_file", type=str, help="Шлях до сирого датасету")
-    parser.add_argument("output_dir", type=str, help="Папка для збереження prepared data")
-    parser.add_argument("--test_size", type=float, default=0.2)
-    parser.add_argument("--random_state", type=int, default=42)
+    parser.add_argument("output_file", type=str, help="Шлях до processed pickle file")
     parser.add_argument("--target_column", type=str, default="Class")
     return parser.parse_args()
 
@@ -66,14 +46,7 @@ def main():
 
     df = load_data(args.input_file)
     df = preprocess_data(df, target_column=args.target_column)
-
-    split_and_save_data(
-        df=df,
-        output_dir=args.output_dir,
-        test_size=args.test_size,
-        random_state=args.random_state,
-        target_column=args.target_column
-    )
+    save_processed_data(df, args.output_file)
 
 
 if __name__ == "__main__":

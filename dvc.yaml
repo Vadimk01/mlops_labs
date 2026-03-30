@@ -1,16 +1,16 @@
 stages:
   prepare:
-    cmd: python src/prepare.py data/raw/creditcard.csv data/prepared
+    cmd: python src/prepare.py data/raw/creditcard.csv data/processed/processed_data.pickle
     deps:
       - data/raw/creditcard.csv
       - src/prepare.py
     outs:
-      - data/prepared
+      - data/processed/processed_data.pickle
 
   train:
-    cmd: python src/train.py data/prepared data/models
+    cmd: python src/train.py data/processed/processed_data.pickle models
     deps:
-      - data/prepared
+      - data/processed/processed_data.pickle
       - src/train.py
     outs:
-      - data/models
+      - models

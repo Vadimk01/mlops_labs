@@ -1,0 +1,30 @@
+defaults:
+  - model: random_forest
+  - hpo: optuna
+  - _self_
+
+seed: 42
+
+mlflow:
+  tracking_uri: "file:./mlruns"
+  experiment_name: "CreditCardFraud_HPO"
+  log_model: true
+  register_model: false
+  model_name: "BestOptimizedModel"
+  stage: "Staging"
+
+data:
+  raw_path: "data/raw/creditcard.csv"
+  processed_path: "data/processed/processed_data.pickle"
+  target_column: "Class"
+  test_size: 0.2
+
+model:
+  type: "random_forest"
+
+metric: "f1"
+
+hydra:
+  run:
+    dir: .
+  output_subdir: null
