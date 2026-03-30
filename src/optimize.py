@@ -18,7 +18,7 @@ from sklearn.metrics import (
     f1_score,
     precision_score,
     recall_score,
-    roc_auc_score
+    roc_auc_score,
 )
 from sklearn.model_selection import train_test_split, cross_val_score
 
@@ -66,22 +66,22 @@ def build_model(cfg: DictConfig, trial: optuna.trial.Trial):
             "n_estimators": trial.suggest_int(
                 "n_estimators",
                 cfg.model.search_space.n_estimators.low,
-                cfg.model.search_space.n_estimators.high
+                cfg.model.search_space.n_estimators.high,
             ),
             "max_depth": trial.suggest_int(
                 "max_depth",
                 cfg.model.search_space.max_depth.low,
-                cfg.model.search_space.max_depth.high
+                cfg.model.search_space.max_depth.high,
             ),
             "min_samples_split": trial.suggest_int(
                 "min_samples_split",
                 cfg.model.search_space.min_samples_split.low,
-                cfg.model.search_space.min_samples_split.high
+                cfg.model.search_space.min_samples_split.high,
             ),
             "min_samples_leaf": trial.suggest_int(
                 "min_samples_leaf",
                 cfg.model.search_space.min_samples_leaf.low,
-                cfg.model.search_space.min_samples_leaf.high
+                cfg.model.search_space.min_samples_leaf.high,
             ),
             "random_state": cfg.seed,
             "class_weight": cfg.model.fixed_params.class_weight,
@@ -97,15 +97,13 @@ def build_model(cfg: DictConfig, trial: optuna.trial.Trial):
                 "C",
                 cfg.model.search_space.C.low,
                 cfg.model.search_space.C.high,
-                log=True
+                log=True,
             ),
             "solver": trial.suggest_categorical(
-                "solver",
-                cfg.model.search_space.solver.values
+                "solver", cfg.model.search_space.solver.values
             ),
             "penalty": trial.suggest_categorical(
-                "penalty",
-                cfg.model.search_space.penalty.values
+                "penalty", cfg.model.search_space.penalty.values
             ),
             "class_weight": cfg.model.fixed_params.class_weight,
             "max_iter": cfg.model.fixed_params.max_iter,
@@ -161,7 +159,7 @@ def objective(trial, cfg, X_train, X_test, y_train, y_test):
                 y_train,
                 cv=cfg.hpo.cv_folds,
                 scoring=cfg.hpo.metric,
-                n_jobs=-1
+                n_jobs=-1,
             )
 
             objective_value = cv_scores.mean()
@@ -174,7 +172,8 @@ def objective(trial, cfg, X_train, X_test, y_train, y_test):
             y_test_pred = model.predict(X_test)
             y_test_proba = (
                 model.predict_proba(X_test)[:, 1]
-                if hasattr(model, "predict_proba") else None
+                if hasattr(model, "predict_proba")
+                else None
             )
             test_metrics = calculate_metrics(y_test, y_test_pred, y_test_proba)
 
@@ -189,11 +188,13 @@ def objective(trial, cfg, X_train, X_test, y_train, y_test):
 
             y_train_proba = (
                 model.predict_proba(X_train)[:, 1]
-                if hasattr(model, "predict_proba") else None
+                if hasattr(model, "predict_proba")
+                else None
             )
             y_test_proba = (
                 model.predict_proba(X_test)[:, 1]
-                if hasattr(model, "predict_proba") else None
+                if hasattr(model, "predict_proba")
+                else None
             )
 
             train_metrics = calculate_metrics(y_train, y_train_pred, y_train_proba)
@@ -221,11 +222,7 @@ def main(cfg: DictConfig):
     X, y = split_features_target(df, cfg.data.target_column)
 
     X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y,
-        test_size=cfg.data.test_size,
-        random_state=cfg.seed,
-        stratify=y
+        X, y, test_size=cfg.data.test_size, random_state=cfg.seed, stratify=y
     )
 
     os.makedirs("models", exist_ok=True)
@@ -247,10 +244,7 @@ def main(cfg: DictConfig):
         mlflow.set_tag("model_type", cfg.model.type)
         mlflow.set_tag("sampler", cfg.hpo.sampler)
 
-        study = optuna.create_study(
-            direction=cfg.hpo.direction,
-            sampler=sampler
-        )
+        study = optuna.create_study(direction=cfg.hpo.direction, sampler=sampler)
 
         def objective_wrapper(trial):
             return objective(
@@ -259,7 +253,7 @@ def main(cfg: DictConfig):
                 X_train=X_train,
                 X_test=X_test,
                 y_train=y_train,
-                y_test=y_test
+                y_test=y_test,
             )
 
         study.optimize(objective_wrapper, n_trials=cfg.hpo.n_trials)
@@ -286,7 +280,8 @@ def main(cfg: DictConfig):
         y_test_pred = best_model.predict(X_test)
         y_test_proba = (
             best_model.predict_proba(X_test)[:, 1]
-            if hasattr(best_model, "predict_proba") else None
+            if hasattr(best_model, "predict_proba")
+            else None
         )
 
         final_metrics = calculate_metrics(y_test, y_test_pred, y_test_proba)

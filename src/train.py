@@ -18,7 +18,7 @@ from sklearn.metrics import (
     precision_score,
     recall_score,
     roc_auc_score,
-    confusion_matrix
+    confusion_matrix,
 )
 from sklearn.model_selection import train_test_split
 
@@ -46,10 +46,7 @@ def split_features_target(df: pd.DataFrame, target_column: str = "Class"):
 
 
 def sample_data(
-    df: pd.DataFrame,
-    max_rows: int,
-    target_column: str,
-    random_state: int
+    df: pd.DataFrame, max_rows: int, target_column: str, random_state: int
 ) -> pd.DataFrame:
     if max_rows is None or len(df) <= max_rows:
         return df
@@ -78,7 +75,9 @@ def sample_data(
     )
 
     if len(sampled_df) > max_rows:
-        sampled_df = sampled_df.sample(n=max_rows, random_state=random_state).reset_index(drop=True)
+        sampled_df = sampled_df.sample(
+            n=max_rows, random_state=random_state
+        ).reset_index(drop=True)
 
     return sampled_df
 
@@ -89,7 +88,7 @@ def calculate_metrics(y_true, y_pred, y_proba):
         "f1": float(f1_score(y_true, y_pred, zero_division=0)),
         "precision": float(precision_score(y_true, y_pred, zero_division=0)),
         "recall": float(recall_score(y_true, y_pred, zero_division=0)),
-        "roc_auc": float(roc_auc_score(y_true, y_proba))
+        "roc_auc": float(roc_auc_score(y_true, y_proba)),
     }
 
 
@@ -128,18 +127,14 @@ def save_metrics(metrics: dict, output_path: str):
 def parse_args():
     parser = argparse.ArgumentParser(description="Train RandomForest with MLflow")
 
+    parser.add_argument("data_path", type=str, help="Шлях до processed_data.pickle")
     parser.add_argument(
-        "data_path",
-        type=str,
-        help="Шлях до processed_data.pickle"
-    )
-    parser.add_argument(
-        "models_dir",
-        type=str,
-        help="Папка для збереження моделі та артефактів"
+        "models_dir", type=str, help="Папка для збереження моделі та артефактів"
     )
 
-    parser.add_argument("--experiment_name", type=str, default="CreditCardFraudDetection")
+    parser.add_argument(
+        "--experiment_name", type=str, default="CreditCardFraudDetection"
+    )
     parser.add_argument("--run_name", type=str, default=None)
 
     parser.add_argument("--n_estimators", type=int, default=100)
@@ -167,17 +162,13 @@ def main():
         df=df,
         max_rows=args.max_rows,
         target_column=args.target_column,
-        random_state=args.random_state
+        random_state=args.random_state,
     )
 
     X, y = split_features_target(df, target_column=args.target_column)
 
     X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y,
-        test_size=args.test_size,
-        random_state=args.random_state,
-        stratify=y
+        X, y, test_size=args.test_size, random_state=args.random_state, stratify=y
     )
 
     mlflow.set_experiment(args.experiment_name)
@@ -192,14 +183,16 @@ def main():
         mlflow.log_param("test_size", args.test_size)
         mlflow.log_param("random_state", args.random_state)
         mlflow.log_param("class_weight", args.class_weight)
-        mlflow.log_param("max_rows", args.max_rows if args.max_rows is not None else "all")
+        mlflow.log_param(
+            "max_rows", args.max_rows if args.max_rows is not None else "all"
+        )
 
         model = RandomForestClassifier(
             n_estimators=args.n_estimators,
             max_depth=args.max_depth,
             random_state=args.random_state,
             n_jobs=-1,
-            class_weight=args.class_weight
+            class_weight=args.class_weight,
         )
 
         model.fit(X_train, y_train)
@@ -220,12 +213,16 @@ def main():
             mlflow.log_metric(f"test_{metric_name}", metric_value)
 
         confusion_matrix_path = os.path.join(args.models_dir, "confusion_matrix.png")
-        feature_importance_path = os.path.join(args.models_dir, "feature_importance.png")
+        feature_importance_path = os.path.join(
+            args.models_dir, "feature_importance.png"
+        )
         metrics_path = os.path.join(args.models_dir, "metrics.json")
         model_path = os.path.join(args.models_dir, "model.pkl")
 
         save_confusion_matrix(y_test, y_test_pred, confusion_matrix_path)
-        save_feature_importance(model, X_train.columns, feature_importance_path, top_n=15)
+        save_feature_importance(
+            model, X_train.columns, feature_importance_path, top_n=15
+        )
         save_metrics(test_metrics, metrics_path)
         joblib.dump(model, model_path)
 
