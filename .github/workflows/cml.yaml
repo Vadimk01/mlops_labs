@@ -64,7 +64,7 @@ jobs:
 
       - name: Train model
         run: |
-          python src/train.py data/processed/processed_data.pickle models --max_rows 5000
+          python src/train.py data/processed/processed_data.pickle models --max_rows 10000
 
       - name: Run post-train tests (Quality Gate)
         run: |
