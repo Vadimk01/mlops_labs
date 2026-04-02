@@ -46,7 +46,7 @@ with DAG(
     evaluate_model = BashOperator(
         task_id="evaluate_model",
         bash_command=(
-            "python -c \"import json; "
+            'python -c "import json; '
             "f=open('/opt/airflow/project/models/metrics.json', 'r', encoding='utf-8'); "
             "metrics=json.load(f); "
             "print('F1:', metrics['f1']); "
