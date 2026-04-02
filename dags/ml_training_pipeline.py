@@ -39,7 +39,7 @@ with DAG(
         bash_command=(
             "python /opt/airflow/project/src/train.py "
             "/opt/airflow/project/data/processed/processed_data.pickle "
-            "/opt/airflow/project/models --max_rows 5000"
+            "/opt/airflow/project/models --max_rows 10000"
         ),
     )
 
